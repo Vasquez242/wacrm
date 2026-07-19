@@ -35,7 +35,11 @@ export async function GET(request: Request) {
   // can't recover the secret byte-by-byte from response-time deltas.
   // Length pre-check is required by timingSafeEqual (throws otherwise)
   // and leaks only the length itself, which isn't sensitive.
-  const supplied = request.headers.get('x-cron-secret') ?? ''
+  // Accept either the custom `x-cron-secret` header (external pingers,
+  // GitHub Actions) or Vercel Cron's native `Authorization: Bearer <secret>`.
+  const supplied =
+    request.headers.get('x-cron-secret') ??
+    (request.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
   const suppliedBuf = Buffer.from(supplied)
   const expectedBuf = Buffer.from(expected)
   if (

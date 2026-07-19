@@ -20,7 +20,11 @@ export async function GET(request: Request) {
   if (!expected) {
     return NextResponse.json({ error: 'cron not configured' }, { status: 503 })
   }
-  const supplied = request.headers.get('x-cron-secret') ?? ''
+  // Accept either the custom `x-cron-secret` header (external pingers,
+  // GitHub Actions) or Vercel Cron's native `Authorization: Bearer <secret>`.
+  const supplied =
+    request.headers.get('x-cron-secret') ??
+    (request.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
   const suppliedBuf = Buffer.from(supplied)
   const expectedBuf = Buffer.from(expected)
   if (
